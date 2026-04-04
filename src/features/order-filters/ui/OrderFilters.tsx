@@ -1,4 +1,4 @@
-import { Col, Input, Row, Select, Space } from 'antd'
+import { Button, Col, Input, Row, Select, Space } from 'antd'
 
 interface OrderFiltersProps {
   searchValue: string
@@ -6,6 +6,7 @@ interface OrderFiltersProps {
   statuses: string[]
   onSearchChange: (value: string) => void
   onStatusChange: (value: string | null) => void
+  onCreateClick: () => void
 }
 
 export const OrderFilters = ({
@@ -14,10 +15,11 @@ export const OrderFilters = ({
   statuses,
   onSearchChange,
   onStatusChange,
+  onCreateClick,
 }: OrderFiltersProps) => {
   return (
-    <Row gutter={[12, 12]}>
-      <Col xs={24} md={14}>
+    <Row gutter={[12, 12]} justify="space-between" align="middle">
+      <Col xs={24} md={18}>
         <Space wrap>
           <Input.Search
             allowClear
@@ -30,11 +32,16 @@ export const OrderFilters = ({
             allowClear
             placeholder="Фильтр по статусу"
             value={statusValue ?? undefined}
-            options={statuses.map((status) => ({ label: status, value: status }))}
             onChange={(value) => onStatusChange(value ?? null)}
+            options={statuses.map((status) => ({ label: status, value: status }))}
             style={{ width: 220 }}
           />
         </Space>
+      </Col>
+      <Col xs={24} md={6}>
+        <Button type="primary" onClick={onCreateClick} block>
+          Новый заказ
+        </Button>
       </Col>
     </Row>
   )

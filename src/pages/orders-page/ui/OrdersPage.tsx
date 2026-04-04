@@ -2,13 +2,17 @@ import { Card, Flex, Skeleton, notification } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../app/store/hooks'
 import {
+  addOrderLocal,
   clearOrdersError,
+  deleteOrderLocal,
   fetchOrders,
   selectOrders,
   selectOrdersError,
   selectOrdersLoading,
+  updateOrderStatusLocal,
 } from '../../../entities/order/model/ordersSlice'
-import type { Order } from '../../../entities/order/model/types'
+import type { CreateOrderPayload, Order } from '../../../entities/order/model/types'
+import { CreateOrderModal } from '../../../features/order-create/ui/CreateOrderModal'
 import { OrderFilters } from '../../../features/order-filters/ui/OrderFilters'
 import { OrdersTable } from '../../../widgets/orders-table/ui/OrdersTable'
 
@@ -24,6 +28,7 @@ export const OrdersPage = () => {
 
   const [searchValue, setSearchValue] = useState<string>('')
   const [statusValue, setStatusValue] = useState<string | null>(null)
+  const [isCreateModalOpen, setCreateModalOpen] = useState<boolean>(false)
 
   useEffect(() => {
     void dispatch(fetchOrders())
@@ -56,6 +61,27 @@ export const OrdersPage = () => {
     })
   }, [orders, searchValue, statusValue])
 
+  const handleCreateOrder = async (payload: CreateOrderPayload): Promise<void> => {
+    dispatch(
+      addOrderLocal({
+        ...payload,
+        customerName: payload.customerName.trim(),
+        status: payload.status.trim(),
+      }),
+    )
+    setSearchValue('')
+    setStatusValue(null)
+    setCreateModalOpen(false)
+  }
+
+  const handleStatusChange = async (orderId: string, status: string): Promise<void> => {
+    dispatch(updateOrderStatusLocal({ id: orderId, status: status.trim() }))
+  }
+
+  const handleDeleteOrder = async (orderId: string): Promise<void> => {
+    dispatch(deleteOrderLocal(orderId))
+  }
+
   return (
     <Card>
       <Flex vertical gap={16}>
@@ -65,13 +91,28 @@ export const OrdersPage = () => {
           statuses={statuses}
           onSearchChange={setSearchValue}
           onStatusChange={setStatusValue}
+          onCreateClick={() => setCreateModalOpen(true)}
         />
 
         {isLoading && orders.length === 0 ? (
           <Skeleton active paragraph={{ rows: 8 }} />
         ) : (
-          <OrdersTable orders={filteredOrders} loading={isLoading} />
+          <OrdersTable
+            orders={filteredOrders}
+            loading={isLoading}
+            statuses={statuses}
+            onStatusChange={handleStatusChange}
+            onDelete={handleDeleteOrder}
+          />
         )}
+
+        <CreateOrderModal
+          open={isCreateModalOpen}
+          loading={false}
+          statuses={statuses}
+          onCancel={() => setCreateModalOpen(false)}
+          onSubmit={handleCreateOrder}
+        />
       </Flex>
     </Card>
   )
