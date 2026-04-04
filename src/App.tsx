@@ -1,4 +1,5 @@
 import { ConfigProvider, Layout, Typography } from 'antd'
+import { OrdersPage } from './pages/orders-page/ui/OrdersPage'
 
 function App() {
   return (
@@ -11,8 +12,13 @@ function App() {
       }}
     >
       <Layout style={{ minHeight: '100vh', placeItems: 'center' }}>
-        <Layout.Content style={{ display: 'grid', placeItems: 'center' }}>
-          <Typography.Title level={2}>Order Management Dashboard</Typography.Title>
+        <Layout.Header style={{ paddingInline: 24 }}>
+          <Typography.Title level={3} style={{ margin: 0, lineHeight: '64px' }}>
+            Order Management Dashboard
+          </Typography.Title>
+        </Layout.Header>
+        <Layout.Content style={{ padding: 20 }}>
+          <OrdersPage />
         </Layout.Content>
       </Layout>
     </ConfigProvider>
