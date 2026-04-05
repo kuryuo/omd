@@ -1,5 +1,5 @@
 import { App, Card, Flex, Skeleton } from 'antd'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../app/store/hooks'
 import {
   addOrderLocal,
@@ -14,15 +14,13 @@ import {
 } from '../../../entities/order/model/ordersSlice'
 import type { CreateOrderPayload, Order } from '../../../entities/order/model/types'
 import { filterOrders } from '../../../entities/order/lib/filterOrders'
-import {
-  loadOrdersFromStorage,
-  saveOrdersToStorage,
-} from '../../../entities/order/lib/ordersLocalStorage'
 import { CreateOrderModal } from '../../../features/order-create/ui/CreateOrderModal'
-import { OrderFilters } from '../../../features/order-filters/ui/OrderFilters'
-import { useAsync } from '../../../shared/hooks/useAsync'
 import { OrderStats } from '../../../widgets/order-stats/ui/OrderStats'
 import { OrdersTable } from '../../../widgets/orders-table/ui/OrdersTable'
+import { useAsync } from '../../../shared/hooks/useAsync'
+import { OrderFilters } from '../../../features/order-filters/ui/OrderFilters'
+import { useOrdersQueryParams } from '../model/useOrdersQueryParams'
+import { useOrdersStorageHydration } from '../model/useOrdersStorageHydration'
 
 export const OrdersPage = () => {
   const { notification } = App.useApp()
@@ -31,46 +29,9 @@ export const OrdersPage = () => {
   const isLoading = useAppSelector(selectOrdersLoading)
   const error = useAppSelector(selectOrdersError)
 
-  const [searchValue, setSearchValue] = useState<string>('')
-  const [statusValue, setStatusValue] = useState<string | null>(null)
+  const { searchValue, setSearchValue, statusValue, setStatusValue } = useOrdersQueryParams()
   const [isCreateModalOpen, setCreateModalOpen] = useState<boolean>(false)
-  const [isStorageHydrated, setStorageHydrated] = useState<boolean>(false)
   const { run: runFetch, isLoading: isFetchRunning } = useAsync()
-  const hasLoadedOnceRef = useRef<boolean>(false)
-
-  useEffect(() => {
-    const queryParams = new URLSearchParams(window.location.search)
-    const querySearch = queryParams.get('search')
-    const queryStatus = queryParams.get('status')
-
-    if (querySearch !== null) {
-      setSearchValue(querySearch)
-    }
-
-    if (queryStatus !== null) {
-      setStatusValue(queryStatus)
-    }
-  }, [])
-
-  useEffect(() => {
-    const queryParams = new URLSearchParams(window.location.search)
-
-    if (searchValue.trim().length > 0) {
-      queryParams.set('search', searchValue)
-    } else {
-      queryParams.delete('search')
-    }
-
-    if (statusValue !== null && statusValue.length > 0) {
-      queryParams.set('status', statusValue)
-    } else {
-      queryParams.delete('status')
-    }
-
-    const query = queryParams.toString()
-    const nextUrl = query.length > 0 ? `${window.location.pathname}?${query}` : window.location.pathname
-    window.history.replaceState(null, '', nextUrl)
-  }, [searchValue, statusValue])
 
   const loadOrders = useCallback(async (): Promise<void> => {
     try {
@@ -82,32 +43,18 @@ export const OrdersPage = () => {
     }
   }, [dispatch, runFetch])
 
-  useEffect(() => {
-    if (hasLoadedOnceRef.current) {
-      return
-    }
-
-    hasLoadedOnceRef.current = true
-    const savedOrders = loadOrdersFromStorage()
-
-    if (savedOrders.length > 0) {
+  const hydrateOrders = useCallback(
+    (savedOrders: Order[]): void => {
       dispatch(hydrateOrdersLocal(savedOrders))
-      setStorageHydrated(true)
-      return
-    }
+    },
+    [dispatch],
+  )
 
-    void loadOrders().finally(() => {
-      setStorageHydrated(true)
-    })
-  }, [dispatch, loadOrders])
-
-  useEffect(() => {
-    if (!isStorageHydrated) {
-      return
-    }
-
-    saveOrdersToStorage(orders)
-  }, [isStorageHydrated, orders])
+  useOrdersStorageHydration({
+    orders,
+    loadOrders,
+    hydrateOrders,
+  })
 
   useEffect(() => {
     if (error === null) {

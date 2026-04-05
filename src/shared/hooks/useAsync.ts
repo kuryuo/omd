@@ -1,45 +1,28 @@
 import { useCallback, useState } from 'react'
 
-interface UseAsyncState {
-  isLoading: boolean
-  error: string | null
-}
-
 interface UseAsyncResult {
   isLoading: boolean
-  error: string | null
   run: <T>(task: () => Promise<T>) => Promise<T>
-  clearError: () => void
 }
 
 export const useAsync = (): UseAsyncResult => {
-  const [state, setState] = useState<UseAsyncState>({
-    isLoading: false,
-    error: null,
-  })
-
-  const clearError = useCallback((): void => {
-    setState((previous) => ({ ...previous, error: null }))
-  }, [])
+  const [isLoading, setLoading] = useState<boolean>(false)
 
   const run = useCallback(async <T,>(task: () => Promise<T>): Promise<T> => {
-    setState({ isLoading: true, error: null })
+    setLoading(true)
 
     try {
       const result = await task()
-      setState({ isLoading: false, error: null })
+      setLoading(false)
       return result
     } catch (error) {
-      const normalizedError = error instanceof Error ? error.message : 'Request failed'
-      setState({ isLoading: false, error: normalizedError })
+      setLoading(false)
       throw error
     }
   }, [])
 
   return {
-    isLoading: state.isLoading,
-    error: state.error,
+    isLoading,
     run,
-    clearError,
   }
 }

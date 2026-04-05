@@ -8,14 +8,12 @@ import type { RootState } from '../../../app/store/store'
 interface OrdersState {
   items: Order[]
   isLoading: boolean
-  isSubmitting: boolean
   error: string | null
 }
 
 const initialState: OrdersState = {
   items: [],
   isLoading: false,
-  isSubmitting: false,
   error: null,
 }
 
@@ -96,5 +94,4 @@ export const ordersReducer = ordersSlice.reducer
 
 export const selectOrders = (state: RootState): Order[] => state.orders.items
 export const selectOrdersLoading = (state: RootState): boolean => state.orders.isLoading
-export const selectOrdersSubmitting = (state: RootState): boolean => state.orders.isSubmitting
 export const selectOrdersError = (state: RootState): string | null => state.orders.error

@@ -32,7 +32,6 @@ describe('ordersSlice reducers', () => {
     const previousState = {
       items: [fixtureOrder],
       isLoading: false,
-      isSubmitting: false,
       error: null,
     }
 
@@ -54,7 +53,6 @@ describe('ordersSlice reducers', () => {
     const previousState = {
       items: [fixtureOrder],
       isLoading: false,
-      isSubmitting: false,
       error: null,
     }
 
@@ -70,7 +68,6 @@ describe('ordersSlice reducers', () => {
     const previousState = {
       items: [fixtureOrder],
       isLoading: false,
-      isSubmitting: false,
       error: null,
     }
 
