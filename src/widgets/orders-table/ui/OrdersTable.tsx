@@ -26,12 +26,12 @@ const normalizeTimestamp = (value: number): number => {
 }
 
 const statusColorMap: Record<string, string> = {
-  pending: 'gold',
-  processing: 'geekblue',
-  paid: 'green',
-  shipped: 'cyan',
-  delivered: 'lime',
-  cancelled: 'red',
+  pending: '#d48806',
+  processing: '#1677ff',
+  paid: '#389e0d',
+  shipped: '#08979c',
+  delivered: '#52c41a',
+  cancelled: '#cf1322',
 }
 
 export const OrdersTable = ({
@@ -57,12 +57,19 @@ export const OrdersTable = ({
       width: 220,
       render: (status: string, record: Order) => (
         <Select
+          className="order-status-select"
+          variant="borderless"
           value={status}
           options={statuses.map((value) => ({
             label: (
-              <Tag color={statusColorMap[value.toLowerCase()] ?? 'default'} style={{ marginInlineEnd: 0 }}>
+              <span
+                style={{
+                  color: statusColorMap[value.toLowerCase()] ?? 'inherit',
+                  fontWeight: 600,
+                }}
+              >
                 {value}
-              </Tag>
+              </span>
             ),
             value,
           }))}

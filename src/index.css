@@ -88,6 +88,16 @@ body.theme-dark .stat-card {
   animation: fade-in-up 0.35s ease-out;
 }
 
+.order-status-select .ant-select-selector {
+  padding-inline: 4px !important;
+}
+
+.order-status-select.ant-select-focused .ant-select-selector,
+.order-status-select:hover .ant-select-selector {
+  background: rgba(55, 157, 241, 0.08) !important;
+  border-radius: 8px;
+}
+
 @keyframes fade-in-up {
   from {
     opacity: 0;
