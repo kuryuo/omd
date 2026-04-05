@@ -1,5 +1,6 @@
-import { Card, Flex, Skeleton, notification } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { Button, Card, Flex, Skeleton, notification } from 'antd'
+import { ReloadOutlined } from '@ant-design/icons'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../app/store/hooks'
 import {
   addOrderLocal,
@@ -12,13 +13,12 @@ import {
   updateOrderStatusLocal,
 } from '../../../entities/order/model/ordersSlice'
 import type { CreateOrderPayload, Order } from '../../../entities/order/model/types'
+import { filterOrders } from '../../../entities/order/lib/filterOrders'
 import { CreateOrderModal } from '../../../features/order-create/ui/CreateOrderModal'
 import { OrderFilters } from '../../../features/order-filters/ui/OrderFilters'
+import { useAsync } from '../../../shared/hooks/useAsync'
+import { OrderStats } from '../../../widgets/order-stats/ui/OrderStats'
 import { OrdersTable } from '../../../widgets/orders-table/ui/OrdersTable'
-
-const includesIgnoreCase = (source: string, query: string): boolean => {
-  return source.toLowerCase().includes(query.toLowerCase())
-}
 
 export const OrdersPage = () => {
   const dispatch = useAppDispatch()
@@ -29,10 +29,21 @@ export const OrdersPage = () => {
   const [searchValue, setSearchValue] = useState<string>('')
   const [statusValue, setStatusValue] = useState<string | null>(null)
   const [isCreateModalOpen, setCreateModalOpen] = useState<boolean>(false)
+  const { run: runFetch, isLoading: isFetchRunning } = useAsync()
+
+  const loadOrders = useCallback(async (): Promise<void> => {
+    try {
+      await runFetch(async () => {
+        await dispatch(fetchOrders()).unwrap()
+      })
+    } catch {
+      return
+    }
+  }, [dispatch, runFetch])
 
   useEffect(() => {
-    void dispatch(fetchOrders())
-  }, [dispatch])
+    void loadOrders()
+  }, [loadOrders])
 
   useEffect(() => {
     if (error === null) {
@@ -48,16 +59,17 @@ export const OrdersPage = () => {
   }, [dispatch, error])
 
   const statuses = useMemo<string[]>(() => {
-    return Array.from(new Set(orders.map((order) => order.status)))
+    const allStatuses = new Set<string>()
+    orders.forEach((order) => {
+      allStatuses.add(order.status)
+    })
+    return Array.from(allStatuses)
   }, [orders])
 
   const filteredOrders = useMemo<Order[]>(() => {
-    const normalized = searchValue.trim()
-
-    return orders.filter((order) => {
-      const byName = includesIgnoreCase(order.customerName, normalized)
-      const byStatus = statusValue === null ? true : order.status === statusValue
-      return byName && byStatus
+    return filterOrders(orders, {
+      searchValue,
+      statusValue,
     })
   }, [orders, searchValue, statusValue])
 
@@ -69,6 +81,7 @@ export const OrdersPage = () => {
         status: payload.status.trim(),
       }),
     )
+
     setSearchValue('')
     setStatusValue(null)
     setCreateModalOpen(false)
@@ -83,8 +96,16 @@ export const OrdersPage = () => {
   }
 
   return (
-    <Card>
+    <Card className="orders-page-card">
       <Flex vertical gap={16}>
+        <OrderStats orders={filteredOrders} />
+
+        <Flex justify="flex-end">
+          <Button icon={<ReloadOutlined />} onClick={() => void loadOrders()}>
+            Обновить
+          </Button>
+        </Flex>
+
         <OrderFilters
           searchValue={searchValue}
           statusValue={statusValue}
@@ -99,7 +120,7 @@ export const OrdersPage = () => {
         ) : (
           <OrdersTable
             orders={filteredOrders}
-            loading={isLoading}
+            loading={isLoading || isFetchRunning}
             statuses={statuses}
             onStatusChange={handleStatusChange}
             onDelete={handleDeleteOrder}
