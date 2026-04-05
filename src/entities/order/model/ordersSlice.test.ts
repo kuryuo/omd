@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  createOrder,
-  deleteOrder,
+  addOrderLocal,
+  deleteOrderLocal,
   fetchOrders,
   ordersReducer,
-  updateOrder,
+  updateOrderStatusLocal,
 } from './ordersSlice'
 import type { Order } from './types'
 
@@ -28,73 +28,54 @@ describe('ordersSlice reducers', () => {
     expect(state.isLoading).toBe(false)
   })
 
-  it('prepends created order', () => {
+  it('prepends created local order', () => {
     const previousState = {
       items: [fixtureOrder],
       isLoading: false,
-      isSubmitting: true,
+      isSubmitting: false,
       error: null,
-    }
-
-    const newOrder: Order = {
-      ...fixtureOrder,
-      id: '2',
-      customerName: 'Anna Smirnova',
     }
 
     const state = ordersReducer(
       previousState,
-      createOrder.fulfilled(newOrder, 'request-id', {
-        customerName: newOrder.customerName,
-        status: newOrder.status,
-        amount: newOrder.amount,
+      addOrderLocal({
+        customerName: 'Anna Smirnova',
+        status: 'paid',
+        amount: 9000,
       }),
     )
 
-    expect(state.items[0]?.id).toBe('2')
+    expect(state.items).toHaveLength(2)
+    expect(state.items[0]?.customerName).toBe('Anna Smirnova')
     expect(state.items[1]?.id).toBe('1')
-    expect(state.isSubmitting).toBe(false)
   })
 
-  it('updates status for specific order', () => {
+  it('updates status for specific local order', () => {
     const previousState = {
       items: [fixtureOrder],
       isLoading: false,
-      isSubmitting: true,
+      isSubmitting: false,
       error: null,
-    }
-
-    const updated: Order = {
-      ...fixtureOrder,
-      status: 'paid',
     }
 
     const state = ordersReducer(
       previousState,
-      updateOrder.fulfilled(updated, 'request-id', {
-        id: fixtureOrder.id,
-        changes: { status: 'paid' },
-      }),
+      updateOrderStatusLocal({ id: fixtureOrder.id, status: 'paid' }),
     )
 
     expect(state.items[0]?.status).toBe('paid')
-    expect(state.isSubmitting).toBe(false)
   })
 
-  it('removes order by id', () => {
+  it('removes order by id locally', () => {
     const previousState = {
       items: [fixtureOrder],
       isLoading: false,
-      isSubmitting: true,
+      isSubmitting: false,
       error: null,
     }
 
-    const state = ordersReducer(
-      previousState,
-      deleteOrder.fulfilled(fixtureOrder.id, 'request-id', fixtureOrder.id),
-    )
+    const state = ordersReducer(previousState, deleteOrderLocal(fixtureOrder.id))
 
     expect(state.items).toHaveLength(0)
-    expect(state.isSubmitting).toBe(false)
   })
 })

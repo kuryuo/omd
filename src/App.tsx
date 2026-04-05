@@ -1,7 +1,16 @@
 import { BulbOutlined, MoonOutlined } from '@ant-design/icons'
 import { App as AntApp, ConfigProvider, Layout, Space, Switch, Typography, theme } from 'antd'
+import ruRU from 'antd/locale/ru_RU'
 import { useEffect, useMemo, useState } from 'react'
 import { OrdersPage } from './pages/orders-page/ui/OrdersPage'
+
+const ruLocale = {
+  ...ruRU,
+  Pagination: {
+    ...ruRU.Pagination,
+    items_per_page: '/ стр.',
+  },
+}
 
 function App() {
   const [isDarkTheme, setDarkTheme] = useState<boolean>(() => {
@@ -47,14 +56,14 @@ function App() {
   }, [])
 
   return (
-    <ConfigProvider theme={appTheme}>
+    <ConfigProvider theme={appTheme} locale={ruLocale}>
       <AntApp>
         <Layout className="app-layout">
           <Layout.Header className="app-header">
             <Space className="app-header-content" align="center">
               <div>
                 <Typography.Title level={3} className="app-title">
-                  Order Management Dashboard
+                  Панель управления заказами
                 </Typography.Title>
                 <Typography.Text className="app-subtitle">
                   Контроль заказов в реальном времени

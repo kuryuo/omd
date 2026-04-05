@@ -1,6 +1,6 @@
 import { Button, Popconfirm, Select, Space, Table, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
-import { memo } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import type { Order } from '../../../entities/order/model/types'
 
 interface OrdersTableProps {
@@ -42,6 +42,35 @@ export const OrdersTable = memo(({
   onStatusChange,
   onDelete,
 }: OrdersTableProps) => {
+  const [currentPage, setCurrentPage] = useState<number>(1)
+  const [pageSize, setPageSize] = useState<number>(6)
+
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(orders.length / pageSize))
+    if (currentPage > maxPage) {
+      setCurrentPage(maxPage)
+    }
+  }, [currentPage, orders.length, pageSize])
+
+  const paginationConfig = useMemo(
+    () => ({
+      current: currentPage,
+      pageSize,
+      showSizeChanger: true,
+      pageSizeOptions: ['6', '10', '20'],
+      showTotal: (total: number) => `Всего: ${total}`,
+      onChange: (page: number, nextPageSize: number) => {
+        setCurrentPage(page)
+        setPageSize(nextPageSize)
+      },
+      onShowSizeChange: (_current: number, nextPageSize: number) => {
+        setCurrentPage(1)
+        setPageSize(nextPageSize)
+      },
+    }),
+    [currentPage, pageSize],
+  )
+
   const columns: TableColumnsType<Order> = [
     {
       title: 'Клиент',
@@ -133,12 +162,7 @@ export const OrdersTable = memo(({
       dataSource={orders}
       loading={loading}
       locale={{ emptyText: 'Список заказов пуст' }}
-      pagination={{
-        pageSize: 6,
-        showSizeChanger: true,
-        pageSizeOptions: [6, 10, 20],
-        showTotal: (total) => `Всего: ${total}`,
-      }}
+      pagination={paginationConfig}
       showSorterTooltip={false}
       size="middle"
       scroll={{ x: 860 }}

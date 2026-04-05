@@ -12,6 +12,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@ant-design/v5-patch-for-react-19": "^1.0.3",
     "@ant-design/icons": "^6.1.0",
     "@reduxjs/toolkit": "^2.11.0",
     "antd": "^5.28.0",

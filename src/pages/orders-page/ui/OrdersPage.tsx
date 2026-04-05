@@ -1,21 +1,23 @@
-import { App, Button, Card, Flex, Skeleton } from 'antd'
-import { DatabaseOutlined, ReloadOutlined } from '@ant-design/icons'
+import { App, Card, Flex, Skeleton } from 'antd'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../app/store/hooks'
 import {
+  addOrderLocal,
   clearOrdersError,
-  createOrder,
-  deleteOrder,
+  deleteOrderLocal,
   fetchOrders,
-  seedTestOrders,
+  hydrateOrdersLocal,
   selectOrders,
   selectOrdersError,
   selectOrdersLoading,
-  selectOrdersSubmitting,
-  updateOrder,
+  updateOrderStatusLocal,
 } from '../../../entities/order/model/ordersSlice'
 import type { CreateOrderPayload, Order } from '../../../entities/order/model/types'
 import { filterOrders } from '../../../entities/order/lib/filterOrders'
+import {
+  loadOrdersFromStorage,
+  saveOrdersToStorage,
+} from '../../../entities/order/lib/ordersLocalStorage'
 import { CreateOrderModal } from '../../../features/order-create/ui/CreateOrderModal'
 import { OrderFilters } from '../../../features/order-filters/ui/OrderFilters'
 import { useAsync } from '../../../shared/hooks/useAsync'
@@ -27,14 +29,13 @@ export const OrdersPage = () => {
   const dispatch = useAppDispatch()
   const orders = useAppSelector(selectOrders)
   const isLoading = useAppSelector(selectOrdersLoading)
-  const isSubmitting = useAppSelector(selectOrdersSubmitting)
   const error = useAppSelector(selectOrdersError)
 
   const [searchValue, setSearchValue] = useState<string>('')
   const [statusValue, setStatusValue] = useState<string | null>(null)
   const [isCreateModalOpen, setCreateModalOpen] = useState<boolean>(false)
+  const [isStorageHydrated, setStorageHydrated] = useState<boolean>(false)
   const { run: runFetch, isLoading: isFetchRunning } = useAsync()
-  const isSeedInProgressRef = useRef<boolean>(false)
   const hasLoadedOnceRef = useRef<boolean>(false)
 
   useEffect(() => {
@@ -87,8 +88,26 @@ export const OrdersPage = () => {
     }
 
     hasLoadedOnceRef.current = true
-    void loadOrders()
-  }, [loadOrders])
+    const savedOrders = loadOrdersFromStorage()
+
+    if (savedOrders.length > 0) {
+      dispatch(hydrateOrdersLocal(savedOrders))
+      setStorageHydrated(true)
+      return
+    }
+
+    void loadOrders().finally(() => {
+      setStorageHydrated(true)
+    })
+  }, [dispatch, loadOrders])
+
+  useEffect(() => {
+    if (!isStorageHydrated) {
+      return
+    }
+
+    saveOrdersToStorage(orders)
+  }, [isStorageHydrated, orders])
 
   useEffect(() => {
     if (error === null) {
@@ -101,7 +120,7 @@ export const OrdersPage = () => {
       placement: 'topRight',
     })
     dispatch(clearOrdersError())
-  }, [dispatch, error])
+  }, [dispatch, error, notification])
 
   const statuses = useMemo<string[]>(() => {
     const allStatuses = new Set<string>()
@@ -119,22 +138,13 @@ export const OrdersPage = () => {
   }, [orders, searchValue, statusValue])
 
   const handleCreateOrder = useCallback(async (payload: CreateOrderPayload): Promise<void> => {
-    try {
-      await dispatch(
-        createOrder({
-          ...payload,
-          customerName: payload.customerName.trim(),
-          status: payload.status.trim(),
-        }),
-      ).unwrap()
-    } catch (error) {
-      void notification.error({
-        message: 'Ошибка создания заказа',
-        description: error instanceof Error ? error.message : 'Не удалось создать заказ',
-        placement: 'topRight',
-      })
-      return
-    }
+    dispatch(
+      addOrderLocal({
+        ...payload,
+        customerName: payload.customerName.trim(),
+        status: payload.status.trim(),
+      }),
+    )
 
     setSearchValue('')
     setStatusValue(null)
@@ -142,73 +152,17 @@ export const OrdersPage = () => {
   }, [dispatch])
 
   const handleStatusChange = useCallback(async (orderId: string, status: string): Promise<void> => {
-    try {
-      await dispatch(updateOrder({ id: orderId, changes: { status: status.trim() } })).unwrap()
-    } catch (error) {
-      void notification.error({
-        message: 'Ошибка обновления',
-        description: error instanceof Error ? error.message : 'Не удалось обновить заказ',
-        placement: 'topRight',
-      })
-    }
+    dispatch(updateOrderStatusLocal({ id: orderId, status: status.trim() }))
   }, [dispatch])
 
   const handleDeleteOrder = useCallback(async (orderId: string): Promise<void> => {
-    try {
-      await dispatch(deleteOrder(orderId)).unwrap()
-    } catch (error) {
-      void notification.error({
-        message: 'Ошибка удаления',
-        description: error instanceof Error ? error.message : 'Не удалось удалить заказ',
-        placement: 'topRight',
-      })
-    }
-  }, [dispatch])
-
-  const handleSeedOrders = useCallback(async (): Promise<void> => {
-    if (isSeedInProgressRef.current) {
-      return
-    }
-
-    isSeedInProgressRef.current = true
-    try {
-      await dispatch(seedTestOrders(30)).unwrap()
-      void notification.success({
-        message: 'Тестовые заказы созданы',
-        description: 'Добавлено 30 заказов',
-        placement: 'topRight',
-      })
-    } catch {
-      void notification.error({
-        message: 'Ошибка создания тестовых заказов',
-        description: 'Не удалось создать тестовые заказы. Проверьте API endpoint.',
-        placement: 'topRight',
-      })
-      return
-    } finally {
-      isSeedInProgressRef.current = false
-    }
+    dispatch(deleteOrderLocal(orderId))
   }, [dispatch])
 
   return (
     <Card className="orders-page-card">
       <Flex vertical gap={16}>
         <OrderStats orders={filteredOrders} />
-
-        <Flex justify="flex-end" gap={8} wrap className="orders-actions">
-          <Button
-            icon={<DatabaseOutlined />}
-            loading={isSubmitting}
-            onClick={() => {
-              void handleSeedOrders()
-            }}
-          >
-            Создать 30 тестовых
-          </Button>
-          <Button icon={<ReloadOutlined />} onClick={() => void loadOrders()}>
-            Обновить
-          </Button>
-        </Flex>
 
         <OrderFilters
           searchValue={searchValue}
@@ -233,7 +187,7 @@ export const OrdersPage = () => {
 
         <CreateOrderModal
           open={isCreateModalOpen}
-          loading={isSubmitting}
+          loading={false}
           statuses={statuses}
           onCancel={() => setCreateModalOpen(false)}
           onSubmit={handleCreateOrder}
