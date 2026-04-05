@@ -37,12 +37,12 @@ const mapCrudCrudOrder = (order: CrudCrudOrder): Order => ({
 })
 
 export const fetchOrdersRequest = async (): Promise<Order[]> => {
-  const { data } = await ordersApi.get<CrudCrudOrder[]>('/')
+  const { data } = await ordersApi.get<CrudCrudOrder[]>('')
   return data.map(mapCrudCrudOrder)
 }
 
 export const createOrderRequest = async (payload: CreateOrderPayload): Promise<Order> => {
-  const { data } = await ordersApi.post<CrudCrudOrder>('/', {
+  const { data } = await ordersApi.post<CrudCrudOrder>('', {
     ...payload,
     createdAt: Math.floor(Date.now() / 1000),
   })
@@ -79,7 +79,7 @@ export const createTestOrdersRequest = async (count: number): Promise<Order[]> =
     const createdAt = now - index * 3600
 
     return ordersApi
-      .post<CrudCrudOrder>('/', {
+      .post<CrudCrudOrder>('', {
         customerName,
         status,
         amount,

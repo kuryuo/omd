@@ -1,5 +1,5 @@
 import { BulbOutlined, MoonOutlined } from '@ant-design/icons'
-import { ConfigProvider, Layout, Space, Switch, Typography, theme } from 'antd'
+import { App as AntApp, ConfigProvider, Layout, Space, Switch, Typography, theme } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { OrdersPage } from './pages/orders-page/ui/OrdersPage'
 
@@ -48,32 +48,34 @@ function App() {
 
   return (
     <ConfigProvider theme={appTheme}>
-      <Layout className="app-layout">
-        <Layout.Header className="app-header">
-          <Space className="app-header-content" align="center">
-            <div>
-              <Typography.Title level={3} className="app-title">
-                Order Management Dashboard
-              </Typography.Title>
-              <Typography.Text className="app-subtitle">
-                Контроль заказов в реальном времени
-              </Typography.Text>
-            </div>
-            <Space align="center">
-              <BulbOutlined />
-              <Switch
-                checked={isDarkTheme}
-                onChange={setDarkTheme}
-                checkedChildren={<MoonOutlined />}
-                unCheckedChildren={<BulbOutlined />}
-              />
+      <AntApp>
+        <Layout className="app-layout">
+          <Layout.Header className="app-header">
+            <Space className="app-header-content" align="center">
+              <div>
+                <Typography.Title level={3} className="app-title">
+                  Order Management Dashboard
+                </Typography.Title>
+                <Typography.Text className="app-subtitle">
+                  Контроль заказов в реальном времени
+                </Typography.Text>
+              </div>
+              <Space align="center">
+                <BulbOutlined />
+                <Switch
+                  checked={isDarkTheme}
+                  onChange={setDarkTheme}
+                  checkedChildren={<MoonOutlined />}
+                  unCheckedChildren={<BulbOutlined />}
+                />
+              </Space>
             </Space>
-          </Space>
-        </Layout.Header>
-        <Layout.Content className="app-content">
-          <OrdersPage />
-        </Layout.Content>
-      </Layout>
+          </Layout.Header>
+          <Layout.Content className="app-content">
+            <OrdersPage />
+          </Layout.Content>
+        </Layout>
+      </AntApp>
     </ConfigProvider>
   )
 }

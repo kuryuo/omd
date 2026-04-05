@@ -1,4 +1,4 @@
-import { Button, Card, Flex, Skeleton, notification } from 'antd'
+import { App, Button, Card, Flex, Skeleton } from 'antd'
 import { DatabaseOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../app/store/hooks'
@@ -23,6 +23,7 @@ import { OrderStats } from '../../../widgets/order-stats/ui/OrderStats'
 import { OrdersTable } from '../../../widgets/orders-table/ui/OrdersTable'
 
 export const OrdersPage = () => {
+  const { notification } = App.useApp()
   const dispatch = useAppDispatch()
   const orders = useAppSelector(selectOrders)
   const isLoading = useAppSelector(selectOrdersLoading)
@@ -118,13 +119,22 @@ export const OrdersPage = () => {
   }, [orders, searchValue, statusValue])
 
   const handleCreateOrder = useCallback(async (payload: CreateOrderPayload): Promise<void> => {
-    await dispatch(
-      createOrder({
-        ...payload,
-        customerName: payload.customerName.trim(),
-        status: payload.status.trim(),
-      }),
-    ).unwrap()
+    try {
+      await dispatch(
+        createOrder({
+          ...payload,
+          customerName: payload.customerName.trim(),
+          status: payload.status.trim(),
+        }),
+      ).unwrap()
+    } catch (error) {
+      void notification.error({
+        message: 'Ошибка создания заказа',
+        description: error instanceof Error ? error.message : 'Не удалось создать заказ',
+        placement: 'topRight',
+      })
+      return
+    }
 
     setSearchValue('')
     setStatusValue(null)
@@ -132,11 +142,27 @@ export const OrdersPage = () => {
   }, [dispatch])
 
   const handleStatusChange = useCallback(async (orderId: string, status: string): Promise<void> => {
-    await dispatch(updateOrder({ id: orderId, changes: { status: status.trim() } })).unwrap()
+    try {
+      await dispatch(updateOrder({ id: orderId, changes: { status: status.trim() } })).unwrap()
+    } catch (error) {
+      void notification.error({
+        message: 'Ошибка обновления',
+        description: error instanceof Error ? error.message : 'Не удалось обновить заказ',
+        placement: 'topRight',
+      })
+    }
   }, [dispatch])
 
   const handleDeleteOrder = useCallback(async (orderId: string): Promise<void> => {
-    await dispatch(deleteOrder(orderId)).unwrap()
+    try {
+      await dispatch(deleteOrder(orderId)).unwrap()
+    } catch (error) {
+      void notification.error({
+        message: 'Ошибка удаления',
+        description: error instanceof Error ? error.message : 'Не удалось удалить заказ',
+        placement: 'topRight',
+      })
+    }
   }, [dispatch])
 
   const handleSeedOrders = useCallback(async (): Promise<void> => {
@@ -153,6 +179,11 @@ export const OrdersPage = () => {
         placement: 'topRight',
       })
     } catch {
+      void notification.error({
+        message: 'Ошибка создания тестовых заказов',
+        description: 'Не удалось создать тестовые заказы. Проверьте API endpoint.',
+        placement: 'topRight',
+      })
       return
     } finally {
       isSeedInProgressRef.current = false
