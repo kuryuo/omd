@@ -77,6 +77,9 @@ const ordersSlice = createSlice({
     clearOrdersError: (state) => {
       state.error = null
     },
+    hydrateOrdersLocal: (state, action: PayloadAction<Order[]>) => {
+      state.items = action.payload
+    },
     addOrderLocal: (state, action: PayloadAction<CreateOrderPayload>) => {
       const localOrder: Order = {
         id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -159,6 +162,7 @@ const ordersSlice = createSlice({
 
 export const {
   clearOrdersError,
+  hydrateOrdersLocal,
   addOrderLocal,
   updateOrderStatusLocal,
   deleteOrderLocal,

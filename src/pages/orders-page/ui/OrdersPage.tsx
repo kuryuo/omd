@@ -7,6 +7,7 @@ import {
   clearOrdersError,
   deleteOrderLocal,
   fetchOrders,
+  hydrateOrdersLocal,
   selectOrders,
   selectOrdersError,
   selectOrdersLoading,
@@ -14,6 +15,10 @@ import {
 } from '../../../entities/order/model/ordersSlice'
 import type { CreateOrderPayload, Order } from '../../../entities/order/model/types'
 import { filterOrders } from '../../../entities/order/lib/filterOrders'
+import {
+  loadOrdersFromStorage,
+  saveOrdersToStorage,
+} from '../../../entities/order/lib/ordersLocalStorage'
 import { CreateOrderModal } from '../../../features/order-create/ui/CreateOrderModal'
 import { OrderFilters } from '../../../features/order-filters/ui/OrderFilters'
 import { useAsync } from '../../../shared/hooks/useAsync'
@@ -29,6 +34,7 @@ export const OrdersPage = () => {
   const [searchValue, setSearchValue] = useState<string>('')
   const [statusValue, setStatusValue] = useState<string | null>(null)
   const [isCreateModalOpen, setCreateModalOpen] = useState<boolean>(false)
+  const [isStorageHydrated, setStorageHydrated] = useState<boolean>(false)
   const { run: runFetch, isLoading: isFetchRunning } = useAsync()
 
   const loadOrders = useCallback(async (): Promise<void> => {
@@ -42,8 +48,26 @@ export const OrdersPage = () => {
   }, [dispatch, runFetch])
 
   useEffect(() => {
-    void loadOrders()
-  }, [loadOrders])
+    const savedOrders = loadOrdersFromStorage()
+
+    if (savedOrders.length > 0) {
+      dispatch(hydrateOrdersLocal(savedOrders))
+      setStorageHydrated(true)
+      return
+    }
+
+    void loadOrders().finally(() => {
+      setStorageHydrated(true)
+    })
+  }, [dispatch, loadOrders])
+
+  useEffect(() => {
+    if (!isStorageHydrated) {
+      return
+    }
+
+    saveOrdersToStorage(orders)
+  }, [isStorageHydrated, orders])
 
   useEffect(() => {
     if (error === null) {
