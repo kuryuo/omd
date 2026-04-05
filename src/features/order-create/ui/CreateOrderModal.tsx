@@ -67,6 +67,7 @@ export const CreateOrderModal = ({
           <AutoComplete
             placeholder="Например: pending"
             options={statuses.map((status) => ({ label: status, value: status }))}
+            notFoundContent="Нет данных"
             filterOption={(input, option) => {
               const optionValue = typeof option?.value === 'string' ? option.value : ''
               return optionValue.toLowerCase().includes(input.toLowerCase())

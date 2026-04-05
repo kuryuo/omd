@@ -51,7 +51,16 @@ export const createOrderRequest = async (payload: CreateOrderPayload): Promise<O
 
 export const updateOrderRequest = async (payload: UpdateOrderPayload): Promise<Order> => {
   const { id, changes } = payload
-  const { data } = await ordersApi.patch<CrudCrudOrder>(`/${id}`, changes)
+
+  const { data: existing } = await ordersApi.get<CrudCrudOrder>(`/${id}`)
+  const nextPayload = {
+    customerName: changes.customerName ?? existing.customerName,
+    status: changes.status ?? existing.status,
+    amount: changes.amount ?? existing.amount,
+    createdAt: existing.createdAt,
+  }
+
+  const { data } = await ordersApi.put<CrudCrudOrder>(`/${id}`, nextPayload)
   return mapCrudCrudOrder(data)
 }
 

@@ -1,5 +1,6 @@
 import { Button, Popconfirm, Select, Space, Table, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
+import { memo } from 'react'
 import type { Order } from '../../../entities/order/model/types'
 
 interface OrdersTableProps {
@@ -34,7 +35,7 @@ const statusColorMap: Record<string, string> = {
   cancelled: '#cf1322',
 }
 
-export const OrdersTable = ({
+export const OrdersTable = memo(({
   orders,
   loading,
   statuses,
@@ -49,12 +50,14 @@ export const OrdersTable = ({
       render: (name: string) => <Typography.Text strong>{name}</Typography.Text>,
       ellipsis: true,
       width: 220,
+      onHeaderCell: () => ({ style: { userSelect: 'none' } }),
     },
     {
       title: 'Статус',
       dataIndex: 'status',
       key: 'status',
       width: 220,
+      onHeaderCell: () => ({ style: { userSelect: 'none' } }),
       render: (status: string, record: Order) => (
         <Select
           className="order-status-select"
@@ -73,6 +76,7 @@ export const OrdersTable = ({
             ),
             value,
           }))}
+          notFoundContent="Нет данных"
           onChange={(value) => {
             void onStatusChange(record.id, value)
           }}
@@ -87,6 +91,7 @@ export const OrdersTable = ({
       sorter: (left, right) => left.amount - right.amount,
       render: (amount: number) => <Tag>{amountFormatter.format(amount)}</Tag>,
       width: 150,
+      onHeaderCell: () => ({ style: { userSelect: 'none' } }),
     },
     {
       title: 'Создан',
@@ -95,11 +100,13 @@ export const OrdersTable = ({
       sorter: (left, right) => left.createdAt - right.createdAt,
       render: (createdAt: number) => dateFormatter.format(new Date(normalizeTimestamp(createdAt))),
       width: 180,
+      onHeaderCell: () => ({ style: { userSelect: 'none' } }),
     },
     {
       title: 'Действия',
       key: 'actions',
       width: 140,
+      onHeaderCell: () => ({ style: { userSelect: 'none' } }),
       render: (_, record) => (
         <Space>
           <Popconfirm
@@ -121,6 +128,7 @@ export const OrdersTable = ({
   return (
     <Table
       rowKey="id"
+      className="orders-table"
       columns={columns}
       dataSource={orders}
       loading={loading}
@@ -131,8 +139,11 @@ export const OrdersTable = ({
         pageSizeOptions: [6, 10, 20],
         showTotal: (total) => `Всего: ${total}`,
       }}
+      showSorterTooltip={false}
       size="middle"
       scroll={{ x: 860 }}
     />
   )
-}
+})
+
+OrdersTable.displayName = 'OrdersTable'

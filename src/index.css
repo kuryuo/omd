@@ -98,6 +98,22 @@ body.theme-dark .stat-card {
   border-radius: 8px;
 }
 
+.filters-controls {
+  width: 100%;
+}
+
+.filters-search {
+  width: 260px;
+}
+
+.filters-status {
+  width: 220px;
+}
+
+.orders-table .ant-table-thead > tr > th {
+  user-select: none;
+}
+
 @keyframes fade-in-up {
   from {
     opacity: 0;
@@ -125,5 +141,23 @@ body.theme-dark .stat-card {
 
   .app-subtitle {
     font-size: 12px;
+  }
+
+  .orders-actions {
+    justify-content: stretch !important;
+  }
+
+  .orders-actions .ant-btn {
+    width: 100%;
+  }
+
+  .filters-controls {
+    display: flex;
+    width: 100%;
+  }
+
+  .filters-search,
+  .filters-status {
+    width: 100%;
   }
 }

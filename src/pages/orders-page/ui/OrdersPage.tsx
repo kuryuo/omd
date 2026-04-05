@@ -1,6 +1,6 @@
 import { Button, Card, Flex, Skeleton, notification } from 'antd'
 import { DatabaseOutlined, ReloadOutlined } from '@ant-design/icons'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../app/store/hooks'
 import {
   clearOrdersError,
@@ -33,6 +33,42 @@ export const OrdersPage = () => {
   const [statusValue, setStatusValue] = useState<string | null>(null)
   const [isCreateModalOpen, setCreateModalOpen] = useState<boolean>(false)
   const { run: runFetch, isLoading: isFetchRunning } = useAsync()
+  const isSeedInProgressRef = useRef<boolean>(false)
+  const hasLoadedOnceRef = useRef<boolean>(false)
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search)
+    const querySearch = queryParams.get('search')
+    const queryStatus = queryParams.get('status')
+
+    if (querySearch !== null) {
+      setSearchValue(querySearch)
+    }
+
+    if (queryStatus !== null) {
+      setStatusValue(queryStatus)
+    }
+  }, [])
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search)
+
+    if (searchValue.trim().length > 0) {
+      queryParams.set('search', searchValue)
+    } else {
+      queryParams.delete('search')
+    }
+
+    if (statusValue !== null && statusValue.length > 0) {
+      queryParams.set('status', statusValue)
+    } else {
+      queryParams.delete('status')
+    }
+
+    const query = queryParams.toString()
+    const nextUrl = query.length > 0 ? `${window.location.pathname}?${query}` : window.location.pathname
+    window.history.replaceState(null, '', nextUrl)
+  }, [searchValue, statusValue])
 
   const loadOrders = useCallback(async (): Promise<void> => {
     try {
@@ -45,6 +81,11 @@ export const OrdersPage = () => {
   }, [dispatch, runFetch])
 
   useEffect(() => {
+    if (hasLoadedOnceRef.current) {
+      return
+    }
+
+    hasLoadedOnceRef.current = true
     void loadOrders()
   }, [loadOrders])
 
@@ -76,7 +117,7 @@ export const OrdersPage = () => {
     })
   }, [orders, searchValue, statusValue])
 
-  const handleCreateOrder = async (payload: CreateOrderPayload): Promise<void> => {
+  const handleCreateOrder = useCallback(async (payload: CreateOrderPayload): Promise<void> => {
     await dispatch(
       createOrder({
         ...payload,
@@ -88,17 +129,22 @@ export const OrdersPage = () => {
     setSearchValue('')
     setStatusValue(null)
     setCreateModalOpen(false)
-  }
+  }, [dispatch])
 
-  const handleStatusChange = async (orderId: string, status: string): Promise<void> => {
+  const handleStatusChange = useCallback(async (orderId: string, status: string): Promise<void> => {
     await dispatch(updateOrder({ id: orderId, changes: { status: status.trim() } })).unwrap()
-  }
+  }, [dispatch])
 
-  const handleDeleteOrder = async (orderId: string): Promise<void> => {
+  const handleDeleteOrder = useCallback(async (orderId: string): Promise<void> => {
     await dispatch(deleteOrder(orderId)).unwrap()
-  }
+  }, [dispatch])
 
-  const handleSeedOrders = async (): Promise<void> => {
+  const handleSeedOrders = useCallback(async (): Promise<void> => {
+    if (isSeedInProgressRef.current) {
+      return
+    }
+
+    isSeedInProgressRef.current = true
     try {
       await dispatch(seedTestOrders(30)).unwrap()
       void notification.success({
@@ -108,15 +154,17 @@ export const OrdersPage = () => {
       })
     } catch {
       return
+    } finally {
+      isSeedInProgressRef.current = false
     }
-  }
+  }, [dispatch])
 
   return (
     <Card className="orders-page-card">
       <Flex vertical gap={16}>
         <OrderStats orders={filteredOrders} />
 
-        <Flex justify="flex-end" gap={8}>
+        <Flex justify="flex-end" gap={8} wrap className="orders-actions">
           <Button
             icon={<DatabaseOutlined />}
             loading={isSubmitting}

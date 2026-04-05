@@ -4,7 +4,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { OrdersPage } from './pages/orders-page/ui/OrdersPage'
 
 function App() {
-  const [isDarkTheme, setDarkTheme] = useState<boolean>(false)
+  const [isDarkTheme, setDarkTheme] = useState<boolean>(() => {
+    if (typeof window === 'undefined') {
+      return false
+    }
+
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  })
 
   const appTheme = useMemo(
     () => ({
@@ -26,6 +32,19 @@ function App() {
   useEffect(() => {
     document.body.classList.toggle('theme-dark', isDarkTheme)
   }, [isDarkTheme])
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+
+    const handleChange = (event: MediaQueryListEvent): void => {
+      setDarkTheme(event.matches)
+    }
+
+    mediaQuery.addEventListener('change', handleChange)
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange)
+    }
+  }, [])
 
   return (
     <ConfigProvider theme={appTheme}>
