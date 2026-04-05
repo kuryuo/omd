@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
-import type { PayloadAction } from '@reduxjs/toolkit'
 import {
+  createTestOrdersRequest,
   createOrderRequest,
   deleteOrderRequest,
   fetchOrdersRequest,
@@ -70,42 +70,23 @@ export const deleteOrder = createAsyncThunk<string, string, { rejectValue: strin
   },
 )
 
+export const seedTestOrders = createAsyncThunk<Order[], number, { rejectValue: string }>(
+  'orders/seedTestOrders',
+  async (count, { rejectWithValue }) => {
+    try {
+      return await createTestOrdersRequest(count)
+    } catch (error) {
+      return rejectWithValue(normalizeApiError(error))
+    }
+  },
+)
+
 const ordersSlice = createSlice({
   name: 'orders',
   initialState,
   reducers: {
     clearOrdersError: (state) => {
       state.error = null
-    },
-    hydrateOrdersLocal: (state, action: PayloadAction<Order[]>) => {
-      state.items = action.payload
-    },
-    addOrderLocal: (state, action: PayloadAction<CreateOrderPayload>) => {
-      const localOrder: Order = {
-        id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        customerName: action.payload.customerName,
-        status: action.payload.status,
-        amount: action.payload.amount,
-        createdAt: Math.floor(Date.now() / 1000),
-      }
-
-      state.items = [localOrder, ...state.items]
-    },
-    updateOrderStatusLocal: (
-      state,
-      action: PayloadAction<{ id: string; status: string }>,
-    ) => {
-      state.items = state.items.map((order) =>
-        order.id === action.payload.id
-          ? {
-              ...order,
-              status: action.payload.status,
-            }
-          : order,
-      )
-    },
-    deleteOrderLocal: (state, action: PayloadAction<string>) => {
-      state.items = state.items.filter((order) => order.id !== action.payload)
     },
   },
   extraReducers: (builder) => {
@@ -157,15 +138,22 @@ const ordersSlice = createSlice({
         state.isSubmitting = false
         state.error = action.payload ?? 'Не удалось удалить заказ'
       })
+      .addCase(seedTestOrders.pending, (state) => {
+        state.isSubmitting = true
+      })
+      .addCase(seedTestOrders.fulfilled, (state, action) => {
+        state.isSubmitting = false
+        state.items = [...action.payload, ...state.items]
+      })
+      .addCase(seedTestOrders.rejected, (state, action) => {
+        state.isSubmitting = false
+        state.error = action.payload ?? 'Не удалось создать тестовые заказы'
+      })
   },
 })
 
 export const {
   clearOrdersError,
-  hydrateOrdersLocal,
-  addOrderLocal,
-  updateOrderStatusLocal,
-  deleteOrderLocal,
 } = ordersSlice.actions
 export const ordersReducer = ordersSlice.reducer
 
